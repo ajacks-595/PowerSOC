@@ -1,0 +1,30 @@
+# PowerSOC scheduled jobs. Installed to /etc/cron.d/powersoc by deploy.sh.
+# Runs as the service user.
+#
+# ⚠️ TIMEZONE: Debian/Ubuntu cron does NOT honour TZ= for SCHEDULING — the
+# times below fire in the HOST's timezone (TZ only affects the spawned
+# commands). Set the host to Europe/London (`timedatectl set-timezone
+# Europe/London`) or the 06:25 brief drifts an hour over BST. (The Docker
+# deploy is unaffected — its in-app scheduler computes Europe/London itself.)
+TZ=Europe/London
+SHELL=/bin/sh
+PATH=/usr/bin:/bin
+# Nightly backups (written by sync_daily.py) — outside the app/data tree; keep
+# in sync with powersoc.service. A .env POWERSOC_BACKUP_DIR does NOT override
+# this (cron env wins over .env), so change it here for a different disk.
+POWERSOC_BACKUP_DIR=/var/backups/powersoc
+
+# Daily incremental sync + morning brief at 06:25 (Octopus SMETS2 data is
+# usually available by then; a partial day still posts a degraded brief).
+# flock: a hung run (upstream socket + retries) must not overlap the next one.
+25 6 * * * powersoc flock -n /tmp/powersoc-sync.lock /opt/powersoc/venv/bin/python /opt/powersoc/sync_daily.py >> /var/log/powersoc-sync.log 2>&1
+
+# Hourly intraday round: today's data, re-sync of unsettled recent days, the
+# brief safety net (retries a missed/failed brief from 07:00) and alerts.
+40 * * * * powersoc flock -n /tmp/powersoc-tick.lock /opt/powersoc/venv/bin/python /opt/powersoc/sync_daily.py --tick >> /var/log/powersoc-sync.log 2>&1
+
+# Daily tariff-rate refresh just after midnight: stores today's + tomorrow's
+# unit-rate periods so the live "current rate" resolves on time-of-use tariffs
+# (the 06:25 run refreshes again). Invoked via the refresh_rates.py entry
+# script — `python -c "import sync"` can't import the app from cron's cwd.
+5 0 * * * powersoc flock -n /tmp/powersoc-rates.lock /opt/powersoc/venv/bin/python /opt/powersoc/refresh_rates.py >> /var/log/powersoc-sync.log 2>&1

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Log in — PowerSOC{% endblock %}
+{% block chrome %}{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+    <div class="card auth-card">
+        <h1><span class="zap" style="color:var(--accent)">⚡</span> PowerSOC</h1>
+        {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+        <form method="post" action="/auth/login">
+            <input type="hidden" name="next" value="{{ next }}">
+            <div class="form-row">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required autofocus
+                       autocomplete="username">
+            </div>
+            <div class="form-row">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required
+                       autocomplete="current-password">
+            </div>
+            <div class="form-row">
+                <label for="totp">2FA code or recovery code <span class="muted">(if enabled)</span></label>
+                {# No digits-only pattern/keypad: recovery codes contain letters,
+                   and pattern="[0-9]*" made the browser refuse ~98% of them. #}
+                <input type="text" id="totp" name="totp" autocomplete="one-time-code"
+                       autocapitalize="off" spellcheck="false" maxlength="32">
+            </div>
+            <button type="submit" class="btn btn-primary">Log in</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

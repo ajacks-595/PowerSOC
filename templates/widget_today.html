@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en" data-theme="{{ theme or 'dark' }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="refresh" content="300">
+    <title>PowerSOC — Today</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/themes.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <style>
+        body { padding: .75rem; background: var(--bg); }
+        .w-head { display:flex; align-items:center; gap:.4rem; margin-bottom:.6rem;
+                  font-weight:700; }
+        .w-head .zap { color: var(--accent); }
+        .w-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:.6rem; }
+        .w-cell .label { color:var(--text-muted); font-size:.7rem;
+                         text-transform:uppercase; letter-spacing:.04em; }
+        .w-cell .value { font-size:1.4rem; font-weight:700; }
+        .w-foot { color:var(--text-muted); font-size:.7rem; margin-top:.6rem;
+                  text-align:right; }
+    </style>
+</head>
+<body>
+{# Unknown renders "–", never 0 (2026-10-07 rule): before the first sync of
+   the day a zero read as "nothing generated, nothing spent". #}
+{% macro kwh(v) %}{{ ('%.1f'|format(v) ~ ' kWh') if v is not none else '–' }}{% endmacro %}
+{% macro money(p) %}{{ ('−£%.2f'|format(-p/100) if p < 0 else '£%.2f'|format(p/100)) if p is not none else '–' }}{% endmacro %}
+{% macro pct(v) %}{{ v|round|int ~ '%' if v is not none else '–' }}{% endmacro %}
+
+<div class="w-head"><span class="zap">⚡</span> PowerSOC · Today</div>
+<div class="w-grid">
+    <div class="w-cell"><div class="label">Solar</div>
+        <div class="value" style="color:var(--c-solar)">{{ kwh(s.pv_kwh) }}</div></div>
+    <div class="w-cell"><div class="label">Self-sufficiency</div>
+        <div class="value" style="color:var(--c-battery)">{{ pct(s.self_sufficiency_pct) }}</div></div>
+    <div class="w-cell"><div class="label">Grid import</div>
+        <div class="value" style="color:var(--c-import)">{{ kwh(s.grid_import_kwh) }}</div></div>
+    <div class="w-cell"><div class="label">Exported</div>
+        <div class="value" style="color:var(--c-export)">{{ kwh(s.grid_export_kwh) }}</div></div>
+    <div class="w-cell"><div class="label">Net cost</div>
+        <div class="value">{{ money(s.net_cost_pence) }}</div></div>
+    <div class="w-cell"><div class="label">Battery peak</div>
+        <div class="value">{{ pct(s.peak_soc_pct) }}</div></div>
+</div>
+<div class="w-foot">{{ date }}</div>
+</body>
+</html>

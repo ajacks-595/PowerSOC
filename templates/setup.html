@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Set up PowerSOC{% endblock %}
+{% block chrome %}{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+  <div class="card" style="width:100%;max-width:560px">
+    <h1><span class="zap" style="color:var(--accent)">⚡</span> Set up PowerSOC</h1>
+    <div class="wizard-progress" id="wizard-progress"></div>
+    <div id="wizard-error" class="alert alert-error" style="display:none"></div>
+    {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+
+    <!-- Step 1: admin account -->
+    <section class="wizard-step" data-step="1">
+      <h2>1 · Create your admin account</h2>
+      <p class="muted">This is the login for the dashboard.</p>
+      <div class="form-row"><label>Setup token</label>
+        <input type="text" id="su-token" autocomplete="off" spellcheck="false"
+               placeholder="printed in the server log">
+        <small class="muted">One-time token from the server log — e.g.
+          <code>docker logs powersoc 2&gt;&amp;1 | grep "setup token"</code> or
+          <code>journalctl -u powersoc | grep "setup token"</code>.</small></div>
+      <div class="form-row"><label>Username</label>
+        <input type="text" id="su-username" autocomplete="username"></div>
+      <div class="form-row"><label>Password (min 8 characters)</label>
+        <input type="password" id="su-password" autocomplete="new-password"></div>
+    </section>
+
+    <!-- Step 2: Sunsynk -->
+    <section class="wizard-step" data-step="2" style="display:none">
+      <h2>2 · Sunsynk inverter</h2>
+      <p class="muted">Your sunsynk.net login. Skip if you don't have one.</p>
+      <div class="form-row"><label>Login email</label>
+        <input type="text" data-cred="SUNSYNK_USERNAME"></div>
+      <div class="form-row"><label>Password</label>
+        <input type="password" data-cred="SUNSYNK_PASSWORD" autocomplete="new-password"></div>
+      <div class="form-row"><label>Inverter serial</label>
+        <input type="text" data-cred="SUNSYNK_INVERTER_SN"></div>
+      <div class="form-row"><label>Plant ID</label>
+        <input type="text" data-cred="SUNSYNK_PLANT_ID"></div>
+      <button class="btn" id="su-test-sunsynk">Test connection</button>
+      <span id="su-sunsynk-result" class="muted"></span>
+    </section>
+
+    <!-- Step 3: Octopus -->
+    <section class="wizard-step" data-step="3" style="display:none">
+      <h2>3 · Octopus Energy</h2>
+      <p class="muted">Enter your API key + account number, then
+        <em>Discover meters</em> to auto-fill the rest.</p>
+      <div class="form-row"><label>API key</label>
+        <input type="password" data-cred="OCTOPUS_API_KEY" autocomplete="new-password"></div>
+      <div class="form-row"><label>Account number (A-XXXXXXXX)</label>
+        <input type="text" data-cred="OCTOPUS_ACCOUNT_NUMBER"></div>
+      <button class="btn" id="su-discover">Discover meters</button>
+      <span id="su-discover-result" class="muted"></span>
+      <div class="grid" style="margin-top:.8rem">
+        <div class="form-row"><label>Import MPAN</label>
+          <input type="text" data-cred="OCTOPUS_MPAN"></div>
+        <div class="form-row"><label>Import serial</label>
+          <input type="text" data-cred="OCTOPUS_METER_SERIAL"></div>
+        <div class="form-row"><label>Export MPAN</label>
+          <input type="text" data-cred="OCTOPUS_EXPORT_MPAN"></div>
+        <div class="form-row"><label>Export serial</label>
+          <input type="text" data-cred="OCTOPUS_EXPORT_SERIAL"></div>
+        <div class="form-row"><label>Gas MPRN</label>
+          <input type="text" data-cred="OCTOPUS_MPRN"></div>
+        <div class="form-row"><label>Gas serial</label>
+          <input type="text" data-cred="OCTOPUS_GAS_SERIAL"></div>
+      </div>
+    </section>
+
+    <!-- Step 4: notifications -->
+    <section class="wizard-step" data-step="4" style="display:none">
+      <h2>4 · Daily brief (optional)</h2>
+      <p class="muted">Post a morning energy summary to Mattermost. Skip to
+        configure later.</p>
+      <div class="form-row"><label>Webhook URL</label>
+        <input type="password" data-cred="MATTERMOST_WEBHOOK_URL" autocomplete="new-password"></div>
+      <div class="form-row"><label>Channel (default #energy)</label>
+        <input type="text" data-cred="MATTERMOST_CHANNEL"></div>
+      <button class="btn" id="su-test-webhook">Test webhook</button>
+      <span id="su-webhook-result" class="muted"></span>
+    </section>
+
+    <!-- Step 5: review -->
+    <section class="wizard-step" data-step="5" style="display:none">
+      <h2>5 · All set</h2>
+      <p class="muted">PowerSOC will now pull your history in the background.
+        You can change any of this later in Settings.</p>
+      <div id="su-review" class="banner"></div>
+    </section>
+
+    <div style="display:flex;gap:.6rem;margin-top:1.2rem;align-items:center">
+      <button class="btn" id="wizard-back" style="display:none">← Back</button>
+      <div class="spacer" style="flex:1"></div>
+      <button class="btn" id="wizard-skip" style="display:none">Skip</button>
+      <button class="btn btn-primary" id="wizard-next">Continue</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script>PowerSOC.initSetup();</script>
+{% endblock %}

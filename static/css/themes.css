@@ -1,0 +1,114 @@
+/* PowerSOC themes — dark (default) and light, as CSS custom properties.
+   The active theme is selected by a data-theme attribute on <html>, set from
+   localStorage by an inline bootstrap script in base.html (no FOUC). */
+
+:root,
+:root[data-theme="dark"] {
+    --bg:           #0e1116;
+    --bg-elev:      #161b22;
+    --bg-elev-2:    #1c232c;
+    --border:       #2a323d;
+    --text:         #e6edf3;
+    --text-muted:   #9aa7b4;
+    --accent:       #f5b301;   /* PowerSOC amber/zap */
+    --accent-2:     #3fb950;   /* solar/positive green */
+    --accent-3:     #58a6ff;   /* import/info blue */
+    --danger:       #f85149;
+    --warn:         #d29922;
+    --card-shadow:  0 1px 3px rgba(0,0,0,.5);
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+    /* Energy-domain series colours (shared by charts) */
+    --c-solar:   #f5b301;
+    --c-battery: #3fb950;
+    --c-import:  #58a6ff;
+    --c-export:  #bc8cff;
+    --c-gas:     #ff7b54;
+    --c-cheap:   #3fb950;
+    --c-day:     #58a6ff;
+    --c-peak:    #f85149;
+}
+
+:root[data-theme="light"] {
+    --bg:           #f4f6f9;
+    --bg-elev:      #ffffff;
+    --bg-elev-2:    #eef1f5;
+    --border:       #d6dde5;
+    --text:         #1b2330;
+    --text-muted:   #5a6573;
+    --accent:       #c98a00;
+    --accent-2:     #1a7f37;
+    --accent-3:     #0969da;
+    --danger:       #cf222e;
+    --warn:         #9a6700;
+    --card-shadow:  0 1px 3px rgba(27,35,48,.12);
+
+    --c-solar:   #c98a00;
+    --c-battery: #1a7f37;
+    --c-import:  #0969da;
+    --c-export:  #8250df;
+    --c-gas:     #d4562b;
+    --c-cheap:   #1a7f37;
+    --c-day:     #0969da;
+    --c-peak:    #cf222e;
+}
+
+/* -------- MIDNIGHT (deep blue, cyan accent — piscope radarModern vibe) -------- */
+:root[data-theme="midnight"] {
+    --bg:        #03080d;
+    --bg-elev:   #0a141f;
+    --bg-elev-2: #0f1d2e;
+    --border:    #16334a;
+    --text:      #e8f4f8;
+    --text-muted:#6f97a8;
+    --accent:    #33e0ff;
+    --accent-2:  #4dff99;
+    --accent-3:  #58a6ff;
+    --danger:    #ff4066;
+    --warn:      #ffc733;
+    --card-shadow: 0 1px 3px rgba(0,0,0,.6);
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --c-solar:   #ffc733;  --c-battery: #4dff99;  --c-import: #33e0ff;
+    --c-export:  #bc8cff;  --c-gas:     #ff7b54;
+    --c-cheap:   #4dff99;  --c-day:     #33e0ff;  --c-peak:   #ff4066;
+}
+
+/* -------- RADAR (green CRT — piscope radar) -------- */
+:root[data-theme="radar"] {
+    --bg:        #050a05;
+    --bg-elev:   #0a150a;
+    --bg-elev-2: #0f1f0f;
+    --border:    #0d3a18;
+    --text:      #00ff41;
+    --text-muted:#02a62f;
+    --accent:    #00ff41;
+    --accent-2:  #66ff66;
+    --accent-3:  #00ff41;
+    --danger:    #ff3333;
+    --warn:      #ffcc00;
+    --card-shadow: 0 0 0 rgba(0,0,0,0);
+    --font: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+    --c-solar:   #ffcc00;  --c-battery: #00ff41;  --c-import: #66ff66;
+    --c-export:  #00d0a0;  --c-gas:     #ff9933;
+    --c-cheap:   #00ff41;  --c-day:     #66ff66;  --c-peak:   #ff3333;
+}
+
+/* -------- TERMINAL (amber CRT — piscope terminal) -------- */
+:root[data-theme="terminal"] {
+    --bg:        #000000;
+    --bg-elev:   #0a0a0a;
+    --bg-elev-2: #141414;
+    --border:    #4d3600;
+    --text:      #ffb000;
+    --text-muted:#996b00;
+    --accent:    #ffb000;
+    --accent-2:  #ffcc44;
+    --accent-3:  #ffb000;
+    --danger:    #ff4d4d;
+    --warn:      #ffb000;
+    --card-shadow: 0 0 0 rgba(0,0,0,0);
+    --font: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+    --c-solar:   #ffb000;  --c-battery: #ffcc44;  --c-import: #ffd980;
+    --c-export:  #ff9933;  --c-gas:     #ff8800;
+    --c-cheap:   #ffcc44;  --c-day:     #ffb000;  --c-peak:   #ff4d4d;
+}

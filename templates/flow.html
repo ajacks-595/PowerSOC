@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}System Flow — PowerSOC{% endblock %}
+{% block content %}
+<div class="card" style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+    <h1 style="margin:0">System flow</h1>
+    <span class="live-dot"></span>
+    <span class="muted" id="flow-ts"></span>
+    <div class="spacer" style="flex:1"></div>
+    <span id="flow-tariff" class="pill"></span>
+</div>
+
+<div id="flow-msg" class="banner" style="display:none;margin-top:1rem"></div>
+
+<div class="card flow-card" style="margin-top:1rem">
+  <svg id="flow-svg" viewBox="0 0 640 430" preserveAspectRatio="xMidYMid meet"
+       role="img" aria-label="Live energy flow diagram">
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6"
+              markerHeight="6" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+      </marker>
+    </defs>
+
+    <!-- flow lines (drawn under the nodes) -->
+    <line id="fl-solar"   class="flow-line" x1="320" y1="92"  x2="320" y2="168"/>
+    <line id="fl-battery" class="flow-line" x1="158" y1="215" x2="252" y2="215"/>
+    <line id="fl-grid"    class="flow-line" x1="388" y1="215" x2="482" y2="215"/>
+    <line id="fl-house"   class="flow-line" x1="320" y1="262" x2="320" y2="338"/>
+
+    <!-- flow value labels -->
+    <text id="fv-solar"   class="flow-val" x="330" y="134"></text>
+    <text id="fv-battery" class="flow-val" x="205" y="205" text-anchor="middle"></text>
+    <text id="fv-grid"    class="flow-val" x="435" y="205" text-anchor="middle"></text>
+    <text id="fv-house"   class="flow-val" x="330" y="305"></text>
+
+    <!-- nodes -->
+    <g class="node" transform="translate(260,28)">
+      <rect width="120" height="64" rx="10"/>
+      <text class="node-icon" x="60" y="26">☀️</text>
+      <text class="node-label" id="n-solar-label" x="60" y="44">Solar</text>
+      <text class="node-val" id="n-solar" x="60" y="60">–</text>
+    </g>
+    <g class="node node-hub" transform="translate(258,170)">
+      <rect width="124" height="92" rx="12"/>
+      <text class="node-icon" x="62" y="34">🏠</text>
+      <text class="node-label" x="62" y="54">Home</text>
+      <text class="node-sub" id="n-hub" x="62" y="74"></text>
+    </g>
+    <g class="node" transform="translate(30,180)">
+      <rect width="128" height="70" rx="10"/>
+      <text class="node-icon" x="64" y="26">🔋</text>
+      <text class="node-label" id="n-battery-label" x="64" y="44">Battery</text>
+      <text class="node-val" id="n-battery" x="64" y="62">–</text>
+    </g>
+    <g class="node" transform="translate(482,180)">
+      <rect width="128" height="70" rx="10"/>
+      <text class="node-icon" x="64" y="26">🔌</text>
+      <text class="node-label" x="64" y="44">Grid</text>
+      <text class="node-val" id="n-grid" x="64" y="62">–</text>
+    </g>
+    <g class="node" transform="translate(260,338)">
+      <rect width="120" height="64" rx="10"/>
+      <text class="node-icon" x="60" y="26">🏡</text>
+      <text class="node-label" x="60" y="44">House load</text>
+      <text class="node-val" id="n-house" x="60" y="60">–</text>
+    </g>
+  </svg>
+  <p class="muted" style="text-align:center;font-size:.8rem;margin:.4rem 0 0">
+    Live power flow (updates every 60s). Moving dots show the direction of flow.
+  </p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script>PowerSOC.initFlow();</script>
+{% endblock %}

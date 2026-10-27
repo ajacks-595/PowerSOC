@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — PowerSOC{% endblock %}
+{% block content %}
+<div id="backfill-banner" class="banner" style="display:none">
+    ⏳ Backfilling historical data… <span id="backfill-progress"></span>
+</div>
+
+<div class="card" style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+    <h1 id="day-title" style="margin:0">Today</h1>
+    <span id="wx" class="wx-chip" style="display:none"></span>
+    <div class="spacer" style="flex:1"></div>
+    <div class="date-nav" style="display:flex;gap:.4rem;align-items:center">
+        <button class="btn" id="nav-prev" title="Previous day">←</button>
+        <input type="date" id="nav-date" aria-label="Jump to date">
+        <button class="btn" id="nav-today">Today</button>
+        <button class="btn" id="nav-next" title="Next day">→</button>
+    </div>
+</div>
+
+<div class="card live-panel" id="live-panel" style="display:none;margin-top:1rem">
+    <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+        <h2 style="margin:0">Live now</h2>
+        <span class="live-dot" title="updating"></span>
+        <span class="muted" id="live-ts"></span>
+        <div class="spacer" style="flex:1"></div>
+        <span id="live-tariff" class="pill"></span>
+    </div>
+    <div class="live-tiles">
+        <div class="live-tile"><div class="label">Solar</div>
+            <div class="value" id="live-pv" style="color:var(--c-solar)">–</div></div>
+        <div class="live-tile"><div class="label" id="live-grid-label">Grid</div>
+            <div class="value" id="live-grid" style="color:var(--c-import)">–</div></div>
+        <div class="live-tile"><div class="label" id="live-batt-label">Battery</div>
+            <div class="value" id="live-batt" style="color:var(--c-battery)">–</div>
+            <div class="sub" id="live-soc"></div>
+            <div class="sub" id="live-eta"></div></div>
+        <div class="live-tile"><div class="label">House load</div>
+            <div class="value" id="live-load">–</div></div>
+    </div>
+    <div class="muted" id="live-today" style="margin-top:.7rem;font-size:.85rem"></div>
+</div>
+
+<div id="offline-chip" class="banner" style="display:none">
+    ⚠️ PowerSOC is unreachable — showing the last copy saved on this device.
+</div>
+
+<div id="no-data" class="banner" style="display:none">
+    No data for this day yet. Configure credentials in
+    <a href="/settings">Settings</a> and run a sync, or wait for the overnight
+    backfill.
+</div>
+
+<div class="grid" id="summary-cards" style="margin-top:1rem">
+    <div class="card summary-card" id="card-net" style="--stripe:var(--accent)">
+        <div class="label" id="c-net-label">💷 Net cost</div>
+        <div class="value" id="c-net">–</div><div class="sub" id="c-net-sub">after export credit</div></div>
+    <div class="card summary-card" style="--stripe:var(--c-solar)"><div class="label">☀️ Solar generated</div>
+        <div class="value" id="c-pv">–</div><div class="sub" id="c-pv-sub"></div></div>
+    <div class="card summary-card" style="--stripe:var(--c-export)"><div class="label">📤 Exported</div>
+        <div class="value" id="c-export">–</div><div class="sub" id="c-export-sub"></div></div>
+    <div class="card summary-card" style="--stripe:var(--c-battery)"><div class="label">🌱 Self-sufficiency</div>
+        <div class="value" id="c-selfsuff">–</div><div class="sub" id="c-selfsuff-sub">grid vs house load</div></div>
+    <div class="card summary-card" style="--stripe:var(--c-battery)"><div class="label">🔋 Battery</div>
+        <div class="value" id="c-soc">–</div><div class="sub" id="c-soc-sub"></div></div>
+    <div class="card summary-card" style="--stripe:var(--c-import)"><div class="label">🔌 Grid import</div>
+        <div class="value" id="c-import">–</div><div class="sub" id="c-import-sub"></div></div>
+    <div class="card summary-card" style="--stripe:var(--c-gas)"><div class="label">🔥 Gas</div>
+        <div class="value" id="c-gas">–</div><div class="sub" id="c-gas-sub"></div></div>
+</div>
+
+<div class="card" id="timeline-panel" style="display:none;margin-top:1rem">
+    <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
+        <h2 style="margin:0">⏱ Next 24 hours</h2>
+        <div class="spacer" style="flex:1"></div>
+        <span class="muted" id="timeline-best"></span>
+    </div>
+    <div class="chart-box" style="height:220px"><canvas id="chart-timeline"></canvas></div>
+</div>
+
+<div class="card" id="forecast-panel" style="display:none;margin-top:1rem">
+    <h2 style="margin-top:0">🌤️ Solar forecast &amp; tips</h2>
+    <div class="grid" id="forecast-days"></div>
+    <ul id="forecast-tips" class="tips-list"></ul>
+</div>
+
+<div class="card" id="plan-panel" style="display:none;margin-top:1rem">
+    <h2 style="margin-top:0">🔌 Tonight's charge plan</h2>
+    <div id="plan-headline" class="value" style="font-size:1.1rem"></div>
+    <ul id="plan-reasons" class="tips-list"></ul>
+    <div class="chart-box" id="plan-chart-box" style="height:200px;display:none">
+        <canvas id="chart-plan"></canvas></div>
+</div>
+
+<div class="card" id="roi-panel" style="display:none;margin-top:1rem">
+    <h2 style="margin-top:0">💰 System payback</h2>
+    <div class="grid">
+        <div class="summary-card" style="--stripe:var(--accent-2)"><div class="label">Paid back</div>
+            <div class="value" id="roi-pct">–</div><div class="sub" id="roi-cum"></div></div>
+        <div class="summary-card"><div class="label">Avg benefit / day</div>
+            <div class="value" id="roi-daily" style="font-size:1.3rem">–</div></div>
+        <div class="summary-card"><div class="label">Break-even</div>
+            <div class="value" id="roi-be" style="font-size:1.3rem">–</div></div>
+    </div>
+</div>
+
+<div class="card" id="insights-panel" style="display:none;margin-top:1rem">
+    <h2 style="margin-top:0">🔎 Insights</h2>
+    <div class="grid" id="insights-grid"></div>
+</div>
+
+<div class="card" id="account-panel" style="display:none;margin-top:1rem">
+    <h2 style="margin-top:0">🐙 Octopus account</h2>
+    <div class="grid">
+        <div class="summary-card" style="--stripe:var(--accent-2)"><div class="label">Balance</div>
+            <div class="value" id="acct-balance">–</div></div>
+        <div class="summary-card"><div class="label">This month so far</div>
+            <div class="value" id="acct-mtd" style="font-size:1.3rem">–</div>
+            <div class="sub" id="acct-mtd-sub"></div></div>
+        <div class="summary-card"><div class="label">Projected month</div>
+            <div class="value" id="acct-proj" style="font-size:1.3rem">–</div></div>
+    </div>
+    <div id="acct-session" class="muted" style="margin-top:.6rem;font-size:.9rem;display:none"></div>
+</div>
+
+<div class="card" id="carbon-panel" style="display:none;margin-top:1rem">
+    <h2 style="margin-top:0">🌍 Grid carbon <span class="muted" id="carbon-region" style="font-size:.8rem"></span></h2>
+    <div class="grid">
+        <div class="summary-card"><div class="label">Right now</div>
+            <div class="value" id="carbon-now">–</div><div class="sub" id="carbon-now-idx"></div></div>
+        <div class="summary-card"><div class="label">Greenest (next 24h)</div>
+            <div class="value" id="carbon-green" style="font-size:1.3rem">–</div><div class="sub" id="carbon-green-g"></div></div>
+        <div class="summary-card" style="--stripe:var(--c-battery)"><div class="label">CO₂ avoided today</div>
+            <div class="value" id="carbon-saved">–</div><div class="sub">solar + battery vs grid</div></div>
+    </div>
+</div>
+
+<div class="card" id="tariff-panel" style="display:none;margin-top:1rem">
+    <h2 style="margin-top:0">Tariffs <span class="muted" id="tariff-region" style="font-size:.8rem"></span></h2>
+    <div class="tariff-grid" id="tariff-body"></div>
+    <div class="muted" id="tariff-flex" style="margin-top:.6rem;font-size:.85rem"></div>
+</div>
+
+<div class="chart-grid">
+    <div class="card"><h2>Energy flow</h2><div class="chart-box"><canvas id="chart-flow"></canvas></div></div>
+    <div class="card"><h2>Battery state of charge</h2><div class="chart-box"><canvas id="chart-soc"></canvas></div></div>
+    <div class="card"><h2>House consumption</h2><div class="chart-box"><canvas id="chart-load"></canvas></div></div>
+    <div class="card"><h2>Import cost by window</h2><div class="chart-box"><canvas id="chart-cost"></canvas></div></div>
+    <div class="card"><h2 id="title-export">Export</h2><div class="chart-box"><canvas id="chart-export"></canvas></div></div>
+    <div class="card"><h2>Gas consumption</h2><div class="chart-box"><canvas id="chart-gas"></canvas></div></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/chart.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script>PowerSOC.initDashboard();</script>
+{% endblock %}

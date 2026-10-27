@@ -1,0 +1,32 @@
+.git/
+.git*
+venv/
+data/
+*.db
+*.db-wal
+*.db-shm
+*.log
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.repo-review/
+.env
+tests/
+docs/
+.idea/
+.vscode/
+# Workspace/tooling dotfiles — must never end up in the image when building
+# from a dev checkout (the live path builds from git archive, which is clean).
+.claude/
+.mcp.json
+.gitconfig
+.gitmodules
+.ripgreprc
+.bashrc
+.bash_profile
+.profile
+.zshrc
+.zprofile
+host/
+scripts/

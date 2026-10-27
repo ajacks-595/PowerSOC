@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Diagnostics — PowerSOC{% endblock %}
+{% block content %}
+<div class="card" style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+    <h1 style="margin:0">Diagnostics</h1>
+    <span class="live-dot"></span>
+    <span class="muted" id="id-ts"></span>
+</div>
+
+<div id="id-msg" class="banner" style="display:none;margin-top:1rem"></div>
+
+<div class="card" style="margin-top:1rem">
+    <h2 style="margin-top:0">🔋 Battery</h2>
+    <div class="grid" id="id-batt"></div>
+</div>
+
+<div class="card" id="id-modules-card" style="margin-top:1rem;display:none">
+    <h2 style="margin-top:0">Battery modules</h2>
+    <div class="table-scroll"><table id="id-modules">
+        <thead><tr><th>Module</th><th>SoC</th><th>Voltage</th><th>Current</th>
+            <th>Power</th><th>Temp</th></tr></thead>
+        <tbody></tbody>
+    </table></div>
+</div>
+
+<div class="card" id="id-health-card" style="margin-top:1rem;display:none">
+    <h2 style="margin-top:0">📉 Battery capacity over time</h2>
+    <p class="muted" id="id-health-summary"></p>
+    <div class="chart-box" style="height:220px"><canvas id="chart-capacity"></canvas></div>
+</div>
+
+<div class="card" id="id-grid-card" style="margin-top:1rem;display:none">
+    <h2 style="margin-top:0">⚡ Grid supply</h2>
+    <p class="muted" id="id-grid-summary"></p>
+    <div class="chart-box" style="height:220px"><canvas id="chart-grid"></canvas></div>
+    <div class="table-scroll"><table id="id-grid-events" style="margin-top:.6rem">
+        <thead><tr><th>Event</th><th>Started</th><th>Lasted</th><th>Voltage</th><th>Frequency</th></tr></thead>
+        <tbody></tbody></table></div>
+</div>
+
+<div class="card" id="id-pv-card" style="margin-top:1rem;display:none">
+    <h2 style="margin-top:0">☀️ Solar strings</h2>
+    <div class="table-scroll"><table id="id-pv">
+        <thead><tr><th>String</th><th>Voltage</th><th>Current</th><th>Power</th>
+            <th>Today</th></tr></thead>
+        <tbody></tbody>
+    </table></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/chart.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script>PowerSOC.initInDepth();</script>
+{% endblock %}

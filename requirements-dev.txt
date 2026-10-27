@@ -1,0 +1,8 @@
+# Development / test / lint dependencies (install on top of requirements.txt).
+# Pinned like the runtime set so dev environments and the repo-review tooling
+# are reproducible.
+-r requirements.txt
+pytest==9.1.1
+ruff==0.17.0
+bandit==1.9.4
+pip-audit==2.10.1

@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+{% block title %}Settings — PowerSOC{% endblock %}
+{% block content %}
+<div id="setup-banner" class="banner" style="display:none">
+    👋 <strong>Welcome to PowerSOC.</strong> Add your Sunsynk and Octopus
+    credentials below, use <em>Discover meters</em> to auto-fill your meter
+    details, test the connections, then <em>Start backfill</em> to pull your
+    history.
+</div>
+
+<div id="settings-status"></div>
+<div id="cred-warning" class="alert alert-warn" role="alert" style="display:none"></div>
+
+<!-- Sunsynk -->
+<div class="card" style="margin-bottom:1rem">
+    <h2>☀️ Sunsynk</h2>
+    <div class="form-row"><label>Login email</label>
+        <input type="text" data-cred="SUNSYNK_USERNAME"></div>
+    <div class="form-row"><label>Password</label>
+        <input type="password" data-cred="SUNSYNK_PASSWORD" autocomplete="new-password"></div>
+    <div class="form-row"><label>Inverter serial</label>
+        <input type="text" data-cred="SUNSYNK_INVERTER_SN"></div>
+    <div class="form-row"><label>Plant ID</label>
+        <input type="text" data-cred="SUNSYNK_PLANT_ID"></div>
+    <button class="btn" id="btn-test-sunsynk">Test connection</button>
+    <span id="sunsynk-result" class="muted"></span>
+</div>
+
+<!-- Octopus -->
+<div class="card" style="margin-bottom:1rem">
+    <h2>🐙 Octopus Energy</h2>
+    <div class="form-row"><label>API key</label>
+        <input type="password" data-cred="OCTOPUS_API_KEY" autocomplete="new-password"></div>
+    <div class="form-row"><label>Account number (A-XXXXXXXX)</label>
+        <input type="text" data-cred="OCTOPUS_ACCOUNT_NUMBER"></div>
+    <button class="btn" id="btn-discover">Discover meters</button>
+    <span id="discover-result" class="muted"></span>
+    <div class="grid" style="margin-top:1rem">
+        <div class="form-row"><label>Import MPAN</label>
+            <input type="text" data-cred="OCTOPUS_MPAN"></div>
+        <div class="form-row"><label>Import serial</label>
+            <input type="text" data-cred="OCTOPUS_METER_SERIAL"></div>
+        <div class="form-row"><label>Export MPAN</label>
+            <input type="text" data-cred="OCTOPUS_EXPORT_MPAN"></div>
+        <div class="form-row"><label>Export serial</label>
+            <input type="text" data-cred="OCTOPUS_EXPORT_SERIAL"></div>
+        <div class="form-row"><label>Gas MPRN</label>
+            <input type="text" data-cred="OCTOPUS_MPRN"></div>
+        <div class="form-row"><label>Gas serial</label>
+            <input type="text" data-cred="OCTOPUS_GAS_SERIAL"></div>
+    </div>
+</div>
+
+<!-- Notifications -->
+<div class="card" style="margin-bottom:1rem">
+    <h2>💬 Notifications (Mattermost)</h2>
+    <div class="form-row"><label>Webhook URL</label>
+        <input type="password" data-cred="MATTERMOST_WEBHOOK_URL" autocomplete="new-password"></div>
+    <div class="form-row"><label>Channel (blank = the webhook's own channel)</label>
+        <input type="text" data-cred="MATTERMOST_CHANNEL"></div>
+    <button class="btn" id="btn-test-webhook">Test webhook</button>
+    <button class="btn" id="btn-test-brief">Send test brief</button>
+    <span id="webhook-result" class="muted"></span>
+</div>
+
+<div class="card" style="margin-bottom:1rem;display:flex;gap:.6rem;align-items:center">
+    <button class="btn btn-primary" id="btn-save">Save credentials</button>
+    <a class="btn" href="/api/settings/env-export" download=".env" id="btn-env-export"
+       onclick="return confirm('This downloads ALL credentials decrypted in plaintext. Continue?')">Export .env</a>
+</div>
+
+<!-- Daily brief: delivery receipt + resend; instance role (O2/O3) -->
+<div class="card" style="margin-bottom:1rem">
+    <h2>📨 Daily brief</h2>
+    <div id="brief-status" class="muted">Loading…</div>
+    <div style="margin-top:.7rem;display:flex;gap:.6rem;align-items:center;flex-wrap:wrap">
+        <label for="brief-date" class="muted">Day</label>
+        <input type="date" id="brief-date">
+        <button class="btn" id="btn-brief-resend">Resend brief</button>
+        <span id="brief-result" class="muted"></span>
+    </div>
+    <h3 style="margin-top:1rem">Instance</h3>
+    <p class="muted">Running a second copy? Make it a <strong>standby</strong> with the
+        primary as its peer: it stays quiet while the primary delivers, and posts the
+        brief (and alerts) only when the primary is unreachable or failed to deliver.</p>
+    <div class="form-row"><label>Name</label>
+        <input type="text" id="inst-name" maxlength="40" placeholder="e.g. pi"></div>
+    <div class="form-row"><label>Role</label>
+        <select id="inst-role"><option value="primary">primary</option>
+            <option value="standby">standby</option></select></div>
+    <div class="form-row"><label>Peer URL (for a standby)</label>
+        <input type="url" id="inst-peer" placeholder="http://192.168.1.51:8073"></div>
+    <button class="btn" id="btn-inst-save">Save instance</button>
+    <span id="inst-result" class="muted"></span>
+</div>
+
+<!-- Alerts & monitoring (quick win 3) -->
+<div class="card" style="margin-bottom:1rem">
+    <h2>🔔 Alerts &amp; monitoring</h2>
+    <p class="muted">Intraday Mattermost alerts (each at most once a day) and an
+        external dead-man's switch (healthchecks.io / Uptime Kuma push URL): pinged
+        hourly, with <code>/fail</code> when data can't flow, the brief is overdue
+        or a backup failed — and silent if this box is down.</p>
+    <div class="form-row"><label>Alerts on</label>
+        <input type="checkbox" id="al-enabled"></div>
+    <div class="form-row"><label>Battery low below (%)</label>
+        <input type="number" id="al-low" min="0" max="100" step="1"></div>
+    <div class="form-row"><label>High spend above (£/day)</label>
+        <input type="number" id="al-cost" min="0" step="0.5"></div>
+    <div class="form-row"><label>Peak-window import above (kWh)</label>
+        <input type="number" id="al-peak" min="0" step="0.5"></div>
+    <div class="form-row"><label>Quiet hours (e.g. 22-7, blank = none)</label>
+        <input type="text" id="al-quiet" maxlength="5" placeholder="22-7"></div>
+    <div class="form-row"><label>Heartbeat URL</label>
+        <input type="password" id="al-hb" autocomplete="new-password"></div>
+    <button class="btn" id="btn-alerts-save">Save alerts</button>
+    <button class="btn" id="btn-hb-test">Test heartbeat</button>
+    <span id="alerts-result" class="muted"></span>
+</div>
+
+<!-- Data & history -->
+<div class="card" style="margin-bottom:1rem">
+    <h2>📈 Data &amp; history</h2>
+    <div id="backfill-coverage" class="muted">Loading…</div>
+    <div style="margin-top:.7rem;display:flex;gap:.6rem;align-items:center;flex-wrap:wrap">
+        <button class="btn" id="btn-backfill" title="Fetch only what's missing: days or sources with gaps or unpriced half-hours">Backfill missing data</button>
+        <button class="btn" id="btn-reprice" title="Re-price stored history from the tariff you were on each day (Octopus only — no consumption re-fetch)">Re-price history</button>
+        <button class="btn" id="btn-backfill-force" title="Re-fetch every source for every day, even complete ones">Force full re-fetch</button>
+        <a class="btn" href="/api/backup/latest" download
+           title="The newest verified nightly backup — keep a copy off this machine (credentials inside stay encrypted; the machine_id key seed is NOT included)">Download latest backup</a>
+        <span id="backfill-result" class="muted"></span>
+    </div>
+</div>
+
+<!-- Theme -->
+<div class="card" style="margin-bottom:1rem">
+    <h2>🎨 Theme</h2>
+    <p class="muted">Your theme preference is stored in this browser.</p>
+    <button class="btn" id="btn-theme">Next theme</button>
+    <span id="theme-name" class="muted"></span>
+</div>
+
+<!-- System & battery (for ROI + state-of-health) -->
+<div class="card" style="margin-bottom:1rem">
+    <h2>🔋 System &amp; battery</h2>
+    <p class="muted">Used for the payback/ROI counter and the battery
+        state-of-health estimate.</p>
+    <div class="grid">
+        <div class="form-row" style="margin:0"><label for="sys-cost">System cost (£)</label>
+            <input type="number" id="sys-cost" step="1" min="0"></div>
+        <div class="form-row" style="margin:0"><label for="sys-nameplate">Battery nameplate (kWh, total)</label>
+            <input type="number" id="sys-nameplate" step="0.1" min="0"></div>
+        <div class="form-row" style="margin:0"><label for="sys-cycles">Rated cycles (warranty)</label>
+            <input type="number" id="sys-cycles" step="100" min="0"></div>
+        <div class="form-row" style="margin:0"><label for="sys-reserve">Battery reserve (%, discharge floor)</label>
+            <input type="number" id="sys-reserve" step="1" min="0" max="100"></div>
+        <div class="form-row" style="margin:0"><label for="sys-charge-kw">Max grid-charge rate (kW)</label>
+            <input type="number" id="sys-charge-kw" step="0.1" min="0"></div>
+        <div class="form-row" style="margin:0"><label for="sys-gas-units">Gas meter units</label>
+            <select id="sys-gas-units">
+                <option value="m3">m³ (standard — converted to kWh)</option>
+                <option value="kwh">kWh (meter already reports kWh)</option>
+            </select></div>
+    </div>
+    <h3 style="margin-top:1rem">📍 Location (weather &amp; grid carbon)</h3>
+    <div class="grid">
+        <div class="form-row" style="margin:0"><label for="sys-wx-lat">Latitude</label>
+            <input type="text" id="sys-wx-lat" placeholder="55.0701"></div>
+        <div class="form-row" style="margin:0"><label for="sys-wx-lon">Longitude</label>
+            <input type="text" id="sys-wx-lon" placeholder="-3.6033"></div>
+        <div class="form-row" style="margin:0"><label for="sys-wx-name">Place name</label>
+            <input type="text" id="sys-wx-name" placeholder="Dumfries"></div>
+        <div class="form-row" style="margin:0"><label for="sys-outcode">Postcode district (carbon region)</label>
+            <input type="text" id="sys-outcode" placeholder="DG1"></div>
+    </div>
+    <div style="margin-top:.7rem;display:flex;gap:.6rem;align-items:center">
+        <button class="btn" id="btn-save-system">Save</button>
+        <span id="system-result" class="muted"></span>
+    </div>
+</div>
+
+<!-- Home API -->
+<div class="card" style="margin-bottom:1rem">
+    <h2>🔗 Home API</h2>
+    <p class="muted">Read-only API for other dashboards and tools. Give each consumer
+        (a home dashboard, Home Assistant, Prometheus…) its <strong>own</strong> token, sent as
+        <code>X-PowerSOC-Token</code> or <code>Authorization: Bearer &lt;token&gt;</code>.
+        Endpoints: <code>/api/home/live</code>, <code>/today</code>, <code>/day/&lt;date&gt;</code>,
+        <code>/history</code>, <code>/tariffs</code>, <code>/timeline</code>, <code>/status</code>,
+        and <code>/metrics</code>.</p>
+    <div class="table-scroll"><table id="home-consumers">
+        <thead><tr><th>Consumer</th><th>Last seen</th><th>From</th><th>Requests</th><th></th></tr></thead>
+        <tbody></tbody></table></div>
+    <div style="margin-top:.6rem;display:flex;gap:.6rem;align-items:center;flex-wrap:wrap">
+        <label for="home-consumer-name" class="muted">New consumer</label>
+        <input type="text" id="home-consumer-name" maxlength="40" placeholder="e.g. Home Assistant">
+        <button class="btn" id="btn-consumer-add">Create token</button>
+        <span id="token-result" class="muted"></span>
+    </div>
+    <div id="home-token-value" class="banner" style="display:none;word-break:break-all;margin-top:.6rem"></div>
+    <div id="home-rejects" style="display:none;margin-top:.8rem">
+        <h3>Rejected tokens</h3>
+        <p class="muted">Something is calling the home API with a token PowerSOC doesn't know.
+            The fingerprint is the first 8 hex characters of the token's SHA-256 — compare it
+            with the consumer's configured token, then give that consumer its own token.</p>
+        <div class="table-scroll"><table id="home-rejects-table">
+            <thead><tr><th>Fingerprint</th><th>From</th><th>Today</th><th>Total</th><th>Last</th></tr></thead>
+            <tbody></tbody></table></div>
+    </div>
+</div>
+
+<!-- Security (current account) -->
+<div class="card" style="margin-bottom:1rem">
+    <h2>🔐 Security</h2>
+    <p class="muted">Two-factor authentication and session control for
+        <strong>your</strong> account.</p>
+    <div id="twofa-status" class="muted">…</div>
+    <div id="twofa-setup" style="display:none;margin-top:.6rem">
+        <p class="muted">Add this to an authenticator app (enter the secret, or
+            paste the URI into a QR generator), then confirm a code:</p>
+        <div class="banner" id="twofa-secret" style="word-break:break-all"></div>
+        <div style="margin-top:.6rem;display:flex;gap:.6rem;align-items:center;flex-wrap:wrap">
+            <label for="twofa-code" class="muted">Code</label>
+            <input type="text" id="twofa-code" placeholder="6-digit code" inputmode="numeric"
+                   autocomplete="one-time-code">
+            <button class="btn btn-primary" id="btn-2fa-confirm">Confirm &amp; enable</button>
+        </div>
+    </div>
+    <div style="margin-top:.6rem;display:flex;gap:.6rem;align-items:center;flex-wrap:wrap">
+        <button class="btn" id="btn-2fa-enable">Enable 2FA</button>
+        <button class="btn" id="btn-2fa-disable" style="display:none">Disable 2FA</button>
+        <button class="btn" id="btn-2fa-recovery" style="display:none"
+                title="Replace your recovery codes (needs a current authenticator code)">New recovery codes</button>
+        <button class="btn" id="btn-revoke-sessions" title="Sign out all other devices">Log out other sessions</button>
+        <span id="twofa-result" class="muted"></span>
+    </div>
+</div>
+
+<!-- Users -->
+<div class="card">
+    <h2>👤 Users</h2>
+    <div class="table-scroll"><table id="users-table">
+        <thead><tr><th>Username</th><th>Role</th><th>Last login</th>
+            <th>Status</th><th></th></tr></thead>
+        <tbody></tbody>
+    </table></div>
+    <h3>Add user</h3>
+    <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:end">
+        <div class="form-row" style="margin:0"><label>Username</label>
+            <input type="text" id="new-username"></div>
+        <div class="form-row" style="margin:0"><label>Password (min 8)</label>
+            <input type="password" id="new-password" autocomplete="new-password"></div>
+        <button class="btn" id="btn-add-user">Add</button>
+        <span id="user-result" class="muted"></span>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script>PowerSOC.initSettings();</script>
+{% endblock %}

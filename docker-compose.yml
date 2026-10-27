@@ -1,0 +1,73 @@
+# PowerSOC — Docker deploy (e.g. on a Runtipi host).
+#   mkdir -p host/backups                                         # once
+#   (umask 077; head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n' > host/machine_id)
+#   sudo chown -R 10001:10001 host                                # once
+#   docker compose up -d --build
+# Then read the one-time setup token from `docker logs powersoc` and open
+# http://<host>:8073/setup. (scripts/deploy-docker.sh automates all of this.)
+#
+# Host-specific values come from a compose `.env` next to this file (compose
+# reads it for ${...} interpolation; it is NOT baked into the image):
+#   POWERSOC_HOST_DIR=/srv/powersoc-host     # backups + key seed live here
+#   POWERSOC_MACHINE_ID_FILE=/host/machine_id
+#   POWERSOC_HEARTBEAT_URL=https://hc.example/ping/<uuid>
+#   POWERSOC_TRUSTED_PROXIES=192.168.1.2      # e.g. a Cloudron App Proxy
+#   POWERSOC_INSTANCE_NAME=pi
+#
+# The project name is FIXED: the data volume is always powersoc_powersoc-data,
+# whichever directory or user deploys it (scripts/deploy-docker.sh relies on
+# that to refuse a new key seed when data already exists).
+name: powersoc
+
+services:
+  powersoc:
+    build: .
+    image: powersoc:local
+    container_name: powersoc
+    restart: unless-stopped
+    ports:
+      - "8073:8073"
+    environment:
+      - TZ=Europe/London
+      - POWERSOC_SCHEDULER=1          # run the daily sync + brief in-container
+      - POWERSOC_COOKIE_SECURE=0      # bare LAN; set 1 behind an HTTPS proxy
+      - POWERSOC_TRUST_PROXY=0        # reached directly on :8073 (LAN) — never
+                                      # trust X-Forwarded-For from everyone, or a
+                                      # LAN client could spoof its IP. A proxy in
+                                      # front (Cloudron) is listed explicitly:
+      - POWERSOC_TRUSTED_PROXIES=${POWERSOC_TRUSTED_PROXIES:-}
+      - POWERSOC_INSTANCE_NAME=${POWERSOC_INSTANCE_NAME:-}
+      - POWERSOC_ROLE=${POWERSOC_ROLE:-}            # primary (default) | standby
+      - POWERSOC_PEER_URL=${POWERSOC_PEER_URL:-}    # a standby's primary
+      # Backups + the Fernet key seed live on the HOST bind mount below, not in
+      # the data volume: in 2026-09 the volume was lost and took every backup
+      # (and the key seed) with it.
+      - POWERSOC_BACKUP_DIR=/host/backups
+      # Defaults to the host-side seed: an empty value fell back to a seed
+      # generated INSIDE the data volume (lost with it; copied with it).
+      - POWERSOC_MACHINE_ID_FILE=${POWERSOC_MACHINE_ID_FILE:-/host/machine_id}
+      - POWERSOC_HEARTBEAT_URL=${POWERSOC_HEARTBEAT_URL:-}
+      - POWERSOC_SETUP_TOKEN=${POWERSOC_SETUP_TOKEN:-}
+    volumes:
+      - powersoc-data:/data           # SQLite DB (+ legacy .instance_id)
+      - ${POWERSOC_HOST_DIR:-./host}:/host   # backups/ + machine_id (host dir)
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m                   # a leak must not pressure the whole host
+    stop_grace_period: 35s            # > gunicorn's 30s graceful timeout, so a
+                                      # redeploy doesn't SIGKILL mid-request
+    logging:                          # cap container stdout (access log) growth
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:                      # mirrors the image HEALTHCHECK; restart
+      test: ["CMD", "python", "-c", "import urllib.request,sys;sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8073/api/health', timeout=4).status==200 else 1)"]
+      interval: 60s
+      timeout: 5s
+      start_period: 30s
+      start_interval: 5s
+      retries: 3
+
+volumes:
+  powersoc-data:

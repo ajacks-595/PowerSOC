@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}History — PowerSOC{% endblock %}
+{% block content %}
+<div class="card" style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+    <div class="tabs" id="period-tabs" style="margin:0;border:none">
+        <button data-period="week" class="active">Week</button>
+        <button data-period="month">Month</button>
+        <button data-period="year">Year</button>
+    </div>
+    <div class="spacer" style="flex:1"></div>
+    <a class="btn" href="/api/export.csv" download title="Download all daily summaries as CSV">⬇ CSV</a>
+    <div style="display:flex;gap:.4rem;align-items:center">
+        <button class="btn" id="hist-prev">←</button>
+        <span id="hist-range" class="muted"></span>
+        <button class="btn" id="hist-next">→</button>
+        <label for="hist-date" class="muted" style="margin-left:.4rem">Jump to</label>
+        <input type="date" id="hist-date">
+    </div>
+</div>
+
+<div class="card" style="margin-top:1rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+    <div class="tabs" id="metric-toggle" style="margin:0;border:none">
+        <button data-metric="cost" class="active">Cost</button>
+        <button data-metric="energy">Energy</button>
+        <button data-metric="self">Self-sufficiency</button>
+    </div>
+    <div class="tabs" id="cost-toggle" style="margin:0;border:none">
+        <button data-cost="both" class="active">Both</button>
+        <button data-cost="elec">Electricity</button>
+        <button data-cost="gas">Gas</button>
+    </div>
+    <label class="muted"><input type="checkbox" id="hist-yoy"> vs last year</label>
+    <div class="spacer" style="flex:1"></div>
+    <span id="hist-total" class="value" style="font-size:1.3rem"></span>
+</div>
+
+<div class="card" style="margin-top:1rem">
+    <div class="chart-box" style="height:320px"><canvas id="chart-history"></canvas></div>
+</div>
+
+<div class="grid" id="hist-totals" style="margin-top:1rem"></div>
+
+<div class="card" style="margin-top:1rem">
+    <div class="table-scroll"><table id="hist-table">
+        <thead><tr><th>Period</th><th>Electricity</th><th>Gas</th>
+            <th>Net</th><th>Solar</th><th>Import</th><th>Export</th></tr></thead>
+        <tbody></tbody>
+    </table></div>
+</div>
+
+<div class="card" id="heatmap-card" style="margin-top:1rem;display:none">
+    <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
+        <h2 style="margin:0">📆 Every day of <span id="heatmap-year"></span></h2>
+        <div class="spacer" style="flex:1"></div>
+        <select id="heatmap-metric" style="width:auto" aria-label="Heatmap metric">
+            <option value="net_cost">Net cost</option><option value="pv_kwh">Solar</option>
+            <option value="import_kwh">Grid import</option><option value="self_sufficiency">Self-sufficiency</option>
+            <option value="gas_kwh">Gas</option></select>
+    </div>
+    <div id="heatmap" class="heatmap"></div>
+    <p class="muted" id="heatmap-legend" style="margin-bottom:0"></p>
+</div>
+
+<div class="card" id="tariffsim-card" style="margin-top:1rem">
+    <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
+        <h2 style="margin:0">🔁 Would another tariff be cheaper?</h2>
+        <div class="spacer" style="flex:1"></div>
+        {% if is_admin %}
+        <select id="tariffsim-days" style="width:auto" aria-label="Period">
+            <option value="30">30 days</option><option value="90" selected>90 days</option>
+            <option value="365">1 year</option></select>
+        <button class="btn" id="btn-tariffsim">Compare</button>
+        {% endif %}
+    </div>
+    <p class="muted" id="tariffsim-note">Your real half-hourly import, priced on Octopus's current
+        tariffs (same usage — load-shifting isn't modelled).</p>
+    <div class="table-scroll"><table id="tariffsim-table" style="display:none">
+        <thead><tr><th>Tariff</th><th>Energy</th><th>Standing</th><th>Total</th><th>vs actual</th></tr></thead>
+        <tbody></tbody></table></div>
+</div>
+
+<div class="card" id="reconcile-card" style="margin-top:1rem;display:none">
+    <h2 style="margin-top:0">🧾 Monthly bill reconciliation</h2>
+    <p class="muted" id="reconcile-note">Our computed net cost per month — cross-check against your Octopus bill.</p>
+    <div class="table-scroll"><table id="reconcile-table">
+        <thead><tr><th>Period</th><th>Our estimate</th><th>Octopus billed</th>
+            <th>Δ</th><th>Days</th></tr></thead>
+        <tbody></tbody>
+    </table></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/chart.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script>PowerSOC.initHistory();</script>
+{% endblock %}

@@ -1,0 +1,16 @@
+# Tooling config for PowerSOC. Lint/format via ruff; security via bandit + ruff-S.
+[tool.ruff]
+line-length = 100
+extend-exclude = ["venv", ".repo-review", "data"]
+
+[tool.ruff.lint]
+# ruff defaults (E4/E7/E9, F) + import sorting (I) + security (S, flake8-bandit).
+select = ["E4", "E7", "E9", "F", "I", "S"]
+
+[tool.ruff.lint.per-file-ignores]
+# Security rules target production code; tests legitimately use assert, fixed
+# fake credentials, and temp paths.
+"tests/*" = ["S"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

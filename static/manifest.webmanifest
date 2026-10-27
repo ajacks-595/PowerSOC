@@ -1,0 +1,14 @@
+{
+  "name": "PowerSOC — Home Energy",
+  "short_name": "PowerSOC",
+  "description": "Self-hosted home-energy dashboard (Sunsynk + Octopus).",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0e1116",
+  "theme_color": "#0e1116",
+  "icons": [
+    {"src": "/static/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}
+  ]
+}

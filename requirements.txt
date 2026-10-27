@@ -1,0 +1,18 @@
+# PowerSOC runtime dependencies (Python 3.11+). Pinned to tested versions for
+# reproducible builds and supply-chain safety; bump deliberately (patch bumps
+# may be auto-applied per the repo-review dependency policy).
+flask==3.1.3
+requests==2.34.2
+tenacity==9.2.1
+python-dateutil==2.9.0.post0
+cryptography==50.0.2
+# Note: `sunsynk-api-client` is intentionally NOT a runtime dependency. It is
+# async (aiohttp) and exposes no /day endpoints, so PowerSOC ships its own
+# synchronous client in sunsynk.py. The library was used only to verify the
+# live auth scheme and response shapes during the build (see CLAUDE.md).
+# IANA timezone data — ensures Europe/London resolves on minimal/slim hosts.
+tzdata==2026.5
+# Production WSGI server (Docker CMD + the systemd unit). Pinned HERE (not in
+# the Dockerfile) so pip-audit / osv scans of requirements.txt actually see
+# the one internet-facing listener.
+gunicorn==26.2.0

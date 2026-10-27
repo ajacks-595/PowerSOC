@@ -1,0 +1,32 @@
+# Dependabot version updates: weekly PRs for dependencies, monthly for actions;
+# CI runs on each one. Security updates are switched on in the repository
+# settings and arrive straight away, ungrouped.
+# Minor and patch bumps are grouped into one PR per ecosystem; majors come one
+# by one. A new release waits 5 days (cooldown) before a PR is opened, so a
+# compromised release is usually pulled before it reaches us.
+version: 2
+updates:
+  - package-ecosystem: pip            # pyproject.toml + requirements*.txt
+    directory: "/"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 5
+    groups:
+      pip-minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: docker         # the digest-pinned base image
+    directory: "/"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 5
+  - package-ecosystem: github-actions # actions used in .github/workflows
+    directory: "/"
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 5
+    groups:
+      actions:
+        patterns: ["*"]

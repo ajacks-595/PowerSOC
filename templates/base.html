@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en" data-theme="{{ theme or 'dark' }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}PowerSOC{% endblock %}</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+    <link rel="manifest" href="/static/manifest.webmanifest">
+    <meta name="theme-color" content="#0e1116">
+    <meta name="color-scheme" content="dark light">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+    <!-- Set the saved theme before stylesheets paint, to avoid a flash. -->
+    <script>
+        (function () {
+            try {
+                var ok = ["dark", "light", "midnight", "radar", "terminal"];
+                var t = localStorage.getItem("powersoc-theme");
+                if (ok.indexOf(t) !== -1) {
+                    document.documentElement.setAttribute("data-theme", t);
+                }
+            } catch (e) {}
+        })();
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/themes.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+{% block chrome %}
+<nav class="nav">
+    <a class="brand" href="/"><span class="zap">⚡</span> PowerSOC</a>
+    <div class="links">
+        <a href="/" class="{{ 'active' if active == 'dashboard' }}">Dashboard</a>
+        <a href="/flow" class="{{ 'active' if active == 'flow' }}">Flow</a>
+        <a href="/indepth" class="{{ 'active' if active == 'indepth' }}">Diagnostics</a>
+        <a href="/history" class="{{ 'active' if active == 'history' }}">History</a>
+        <a href="/data" class="{{ 'active' if active == 'data' }}">Data</a>
+        {% if is_admin %}<a href="/settings" class="{{ 'active' if active == 'settings' }}">Settings</a>{% endif %}
+    </div>
+    <div class="spacer"></div>
+    {% if current_user %}
+        <span class="nav-user">{{ current_user.username }}</span>
+    {% endif %}
+    <button class="icon-btn" id="theme-toggle" title="Toggle theme"
+            aria-label="Toggle theme">◑</button>
+    {% if current_user %}
+        <a class="btn" href="/auth/logout">Log out</a>
+    {% endif %}
+</nav>
+{% endblock %}
+
+<main class="container">
+    {% if body %}{{ body|safe }}{% else %}{% block content %}{% endblock %}{% endif %}{# nosemgrep: python.flask.security.xss.audit.template-unescaped-with-safe.template-unescaped-with-safe — body is only a constant 404/500 snippet from app.py #}
+</main>
+
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+{% block scripts %}{% endblock %}
+<script>
+    if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function () {
+            navigator.serviceWorker.register("/sw.js").catch(function () {});
+        });
+    }
+</script>
+</body>
+</html>

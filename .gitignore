@@ -1,0 +1,28 @@
+# PowerSOC
+.env
+.env.*
+!.env.example
+data/
+*.db
+*.db-wal
+*.db-shm
+*.log
+
+# Python
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Tooling artifacts
+.repo-review/
+
+# Editor / OS
+.idea/
+.vscode/
+.DS_Store
+host/

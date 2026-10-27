@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Data — PowerSOC{% endblock %}
+{% block content %}
+<div class="card">
+    <h1 style="margin-top:0">Data health</h1>
+    <div id="health-chips" class="chip-row"></div>
+</div>
+
+<div class="card" style="margin-top:1rem">
+    <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
+        <h2 style="margin:0">Coverage</h2>
+        <div class="spacer" style="flex:1"></div>
+        <select id="coverage-days" style="width:auto" aria-label="Range">
+            <option value="90">90 days</option><option value="365">1 year</option>
+            <option value="1095">3 years</option></select>
+    </div>
+    <p class="muted" id="coverage-legend">Each square is a day: <span class="cov cov-complete"></span> every
+        source complete · <span class="cov cov-partial"></span> partial ·
+        <span class="cov cov-missing"></span> nothing stored. Hover for the half-hours per source.</p>
+    <div id="coverage-grid" class="coverage-grid"></div>
+</div>
+
+<div class="card" style="margin-top:1rem">
+    <h2 style="margin-top:0">Meter vs CT</h2>
+    <p class="muted" id="ct-summary">Loading…</p>
+    <div class="table-scroll"><table id="ct-table" style="display:none">
+        <thead><tr><th>Day</th><th>Meter kWh</th><th>CT kWh</th><th>CT / meter</th></tr></thead>
+        <tbody></tbody></table></div>
+</div>
+
+<div class="card" style="margin-top:1rem">
+    <h2 style="margin-top:0">Recent fetches</h2>
+    <div class="table-scroll"><table id="synclog-table">
+        <thead><tr><th>When</th><th>Source</th><th>Day</th><th>Status</th><th>Rows</th><th>Note</th></tr></thead>
+        <tbody></tbody></table></div>
+</div>
+
+{% if is_admin %}
+<div class="card" id="audit-card" style="margin-top:1rem">
+    <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
+        <h2 style="margin:0">Audit log</h2>
+        <div class="spacer" style="flex:1"></div>
+        <select id="audit-action" style="width:auto" aria-label="Filter">
+            <option value="">all actions</option>
+            <option>user.login</option><option>user.login_failed</option>
+            <option>settings.credentials</option><option>settings.system</option>
+            <option>home_token.create</option><option>backup.download</option>
+            <option>brief.resend</option><option>backfill.start</option>
+        </select>
+    </div>
+    <div class="table-scroll"><table id="audit-table">
+        <thead><tr><th>When (UTC)</th><th>User</th><th>Action</th><th>Target</th><th>Details</th><th>IP</th></tr></thead>
+        <tbody></tbody></table></div>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script>PowerSOC.initData();</script>
+{% endblock %}

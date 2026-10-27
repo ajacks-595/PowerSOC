@@ -1,0 +1,113 @@
+# PowerSOC CI — lint, security lint, tests, dependency audit, image build.
+# Runs on every push/PR to main, and weekly so a NEWLY published CVE in a
+# pinned dependency fails CI even when the code hasn't changed.
+# Third-party actions are pinned to commit SHAs (tags can be moved).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "17 6 * * 1"          # Mondays 06:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PIP_VERSION: "26.2.1"           # keep in step with the Dockerfile
+
+jobs:
+  test:
+    name: lint + tests (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.14 = the production image + dev env; 3.12 = host deploys
+        # (deploy.sh, Ubuntu 24.04's system Python).
+        python-version: ["3.12", "3.14"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+            constraints.txt
+      - name: Install (pinned)
+        run: |
+          python -m pip install "pip==${PIP_VERSION}"
+          pip install -r requirements-dev.txt -c constraints.txt
+      - name: ruff
+        run: ruff check .
+      - name: "bandit (app code; tests exempt, as with ruff S rules)"
+        run: bandit -q -ll -r . -x ./tests,./venv,./.venv
+      - name: "pytest (hermetic — no network, fresh DB per test, no TZ forced)"
+        run: python -m pytest -q -W error
+
+  audit:
+    name: dependency audit (OSV)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.14"   # = the production image
+      - name: pip-audit (runtime, transitive lock, dev tooling)
+        run: |
+          python -m pip install "pip==${PIP_VERSION}" "pip-audit==2.10.1"
+          pip-audit -s osv -r requirements.txt -r constraints.txt -r requirements-dev.txt
+
+  image:
+    name: docker build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build the production image (no push)
+        run: docker build --tag powersoc:ci .
+      - name: Image smoke test (app imports, deps match the lock)
+        run: |
+          docker run --rm --entrypoint python powersoc:ci -c \
+            "import app, config; print('PowerSOC', config.APP_VERSION)"
+          docker run --rm --entrypoint pip powersoc:ci --version
+          # The lock must be EXACTLY what the image installs: a stale entry
+          # (packaging, after gunicorn 26.2 dropped it) or an unlocked
+          # transitive dependency both fail here.
+          docker run --rm --entrypoint pip powersoc:ci freeze | sort > installed.txt
+          grep -vE '^(#|$)' constraints.txt | sort > locked.txt
+          diff -u locked.txt installed.txt
+      - name: Start the real image and require a healthy /api/health
+        # Importing the app is not running it: gunicorn, the factory, the
+        # key check and the non-root /data volume only meet at start-up.
+        run: |
+          docker run -d --name ps -e POWERSOC_MACHINE_ID=ci-seed \
+            -e POWERSOC_SCHEDULER=0 -p 127.0.0.1:18073:8073 powersoc:ci
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:18073/api/health > health.json && break
+            sleep 2
+          done
+          docker logs ps 2>&1 | tail -20
+          python3 - <<'PY'
+          import json, re
+          d = json.load(open("health.json"))["data"]
+          want = re.search(r'^APP_VERSION = "(.+)"$', open("config.py").read(), re.M).group(1)
+          assert d["status"] == "ok" and d["version"] == want, d
+          print("healthy:", d)
+          PY

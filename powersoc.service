@@ -1,0 +1,39 @@
+[Unit]
+Description=PowerSOC Energy Dashboard
+After=network.target
+
+[Service]
+Type=simple
+User=powersoc
+WorkingDirectory=/opt/powersoc
+Environment=PYTHONUNBUFFERED=1
+Environment=TZ=Europe/London
+# Backups outside the app/data tree by default (keep in sync with
+# powersoc.cron; override in .env — ideally with a different disk).
+Environment=POWERSOC_BACKUP_DIR=/var/backups/powersoc
+EnvironmentFile=-/opt/powersoc/.env
+# gunicorn (same invocation as the Docker image) — the Werkzeug dev server is
+# not production-hardened (no request timeouts, weaker socket handling).
+ExecStart=/opt/powersoc/venv/bin/gunicorn --workers 1 --threads 4 --timeout 120 --bind 0.0.0.0:8073 --access-logfile - app:create_app()
+Restart=on-failure
+RestartSec=10
+StandardOutput=append:/var/log/powersoc.log
+StandardError=append:/var/log/powersoc.log
+
+# Hardening (LAN service). deploy.sh rewrites /opt/powersoc -> $INSTALL_DIR.
+# NOTE: ProtectHome=true means INSTALL_DIR must NOT live under /home — the
+# unit would fail at start with an opaque namespace error.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/powersoc/data /var/log/powersoc.log -/var/backups/powersoc
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target
