@@ -13,21 +13,16 @@ entirely on your own hardware and works air-gapped.
 
 ---
 
-## Screenshot (ASCII mockup)
+## Screenshots
 
-```
- ⚡ PowerSOC      Dashboard | History | Settings              admin  ◑  Log out
- ┌──────────────────────────────────────────────────────────────────────────┐
- │ Today                                       ←  [ 2026-05-25 ]  Today  →    │
- ├────────────┬────────────┬────────────┬────────────┬───────────┬──────────┤
- │ SOLAR      │ SELF-SUFF. │ NET COST   │ BATTERY    │ IMPORT    │ GAS      │
- │ 18.4 kWh   │ 86%        │ £1.90      │ 100% peak  │ 4.3 kWh   │ 12.4 kWh │
- │ exp 6.8kWh │            │ after exp. │ end 62%    │ c/d/p     │ £0.88    │
- ├────────────┴────────────┴────────────┴────────────┴───────────┴──────────┤
- │  [ Energy flow ]      [ Battery SoC ]      [ House consumption ]          │
- │  [ Import cost  ]     [ Export       ]     [ Gas consumption   ]          │
- └──────────────────────────────────────────────────────────────────────────┘
-```
+The dashboard: live power, today's totals, and the next 24 hours of import
+price and grid carbon intensity.
+
+![PowerSOC dashboard showing live power, today's cost and energy totals, and a 24-hour price and carbon chart](docs/screenshots/dashboard.png)
+
+| Solar forecast & charge plan | Live power flow | Monthly history |
+|---|---|---|
+| ![Solar forecast cards and tonight's grid-charge plan with a battery state-of-charge chart](docs/screenshots/dashboard-plan.png) | ![System flow diagram of solar, battery, grid and house load](docs/screenshots/flow.png) | ![Month view of daily electricity and gas cost with totals](docs/screenshots/history.png) |
 
 ---
 
@@ -181,6 +176,8 @@ another dashboard (Homarr, Homer, a custom page) via an iframe:
 <iframe src="http://<host>:8073/widget/today?theme=dark"
         style="width:340px;height:260px;border:0"></iframe>
 ```
+
+![The /widget/today summary in the dark theme](docs/screenshots/widget.png)
 
 It refreshes itself every 5 minutes and accepts `?theme=dark|light`.
 
