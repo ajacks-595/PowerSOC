@@ -11,7 +11,7 @@ cryptography==50.0.2
 # synchronous client in sunsynk.py. The library was used only to verify the
 # live auth scheme and response shapes during the build (see CLAUDE.md).
 # IANA timezone data — ensures Europe/London resolves on minimal/slim hosts.
-tzdata==2026.5
+tzdata==2026.6
 # Production WSGI server (Docker CMD + the systemd unit). Pinned HERE (not in
 # the Dockerfile) so pip-audit / osv scans of requirements.txt actually see
 # the one internet-facing listener.
