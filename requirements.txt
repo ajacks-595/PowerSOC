@@ -4,7 +4,7 @@
 flask==3.1.3
 requests==2.34.2
 tenacity==9.2.1
-python-dateutil==2.9.0.post0
+python-dateutil==3.0.0
 cryptography==50.0.2
 # Note: `sunsynk-api-client` is intentionally NOT a runtime dependency. It is
 # async (aiohttp) and exposes no /day endpoints, so PowerSOC ships its own
