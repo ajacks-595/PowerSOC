@@ -15,4 +15,4 @@ tzdata==2026.6
 # Production WSGI server (Docker CMD + the systemd unit). Pinned HERE (not in
 # the Dockerfile) so pip-audit / osv scans of requirements.txt actually see
 # the one internet-facing listener.
-gunicorn==26.2.0
+gunicorn==27.0.0
